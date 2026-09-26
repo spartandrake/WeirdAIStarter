@@ -102,3 +102,7 @@ python app/gradio_app.py
 
 After the model is trained and saved in a format it can be restored in, the gradio application will work. 
 - This happens in the final assignment
+
+## Zip necessary files for submission
+git archive HEAD -o KristopherCreel-weirdai.zip
+
