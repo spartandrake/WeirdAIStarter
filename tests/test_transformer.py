@@ -28,7 +28,7 @@ def test_layer_norm_mean_is_close_to_zero():
 
 
 def test_layer_norm_variance_is_close_to_one():
-    x = torch.rand(2, 3, 768)
+    x = torch.randn(2, 3, 768)
 
     layer_norm = LayerNorm(emb_dim=768)
 
