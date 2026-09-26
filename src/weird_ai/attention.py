@@ -23,8 +23,25 @@ class SimpleSelfAttention(nn.Module):
         # 1. Compute attention scores using matrix multiplication.
         # 2. Normalize scores with softmax.
         # 3. Compute context vectors as weighted sums of input vectors.
+        query_index = 1
+        query = x[query_index]
+        attention_scores = torch.empty(x.shape[0])
 
-        raise NotImplementedError("Implement simple self-attention.")
+        for index, token_embedding in enumerate(x):
+            attention_scores[index] = torch.dot(query, token_embedding)
+        attention_weights = torch.softmax(attention_scores, dim=0)
+
+        context_vector = torch.zeros(query.shape)
+
+        for index, token_embedding in enumerate(x):
+            context_vector += attention_weights[index] * token_embedding
+
+        all_attention_scores = x @ x.T
+        all_attention_weights = torch.softmax(all_attention_scores, dim=-1)
+        all_context_vectors = all_attention_weights @ x
+
+        return all_context_vectors, all_attention_weights
+
 
 class SelfAttention(nn.Module):
     """
@@ -53,8 +70,16 @@ class SelfAttention(nn.Module):
         # 2. Compute scaled attention scores.
         # 3. Apply softmax.
         # 4. Compute context vectors.
+        queries = self.query(x)
+        keys = self.key(x)
+        values = self.value(x)
 
-        raise NotImplementedError("Implement trainable self-attention.")
+        d_k = queries.shape[-1]
+        attention_scores = queries @ keys.mT / d_k ** 0.5  
+        attention_weights = torch.softmax(attention_scores, dim=-1)
+        context_vectors = attention_weights @ values
+
+        return context_vectors, attention_weights
 
 class CausalAttention(nn.Module):
     """
@@ -90,5 +115,14 @@ class CausalAttention(nn.Module):
         # 4. Apply softmax.
         # 5. Apply dropout.
         # 6. Compute context vectors.
+        query = self.query(x)
+        key = self.key(x)
+        value = self.value(x)
 
-        raise NotImplementedError("Implement causal attention.")
+        attention_scores = query @ key.transpose(1,2) / (key.shape[-1] ** 0.5)
+        attention_scores = attention_scores.masked_fill(self.mask == 1, float('-inf'))
+        attention_weights = torch.softmax(attention_scores, dim=-1)
+        attention_weights = self.dropout(attention_weights)
+        context_vectors = attention_weights @ value
+
+        return context_vectors

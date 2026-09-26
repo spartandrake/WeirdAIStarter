@@ -13,7 +13,7 @@ def main():
 
     dataset = load_dataset(
         "parquet",
-        data_files=str(RAW_DATA_DIR / "*.parquet"),
+        data_files=str(RAW_DATA_DIR / "**" / "*.parquet"),
         split="train"
     )
 
