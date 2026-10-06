@@ -120,7 +120,9 @@ class CausalAttention(nn.Module):
         value = self.value(x)
 
         attention_scores = query @ key.transpose(1,2) / (key.shape[-1] ** 0.5)
-        attention_scores = attention_scores.masked_fill(self.mask == 1, float('-inf'))
+        num_tokens = x.shape[1]
+        mask = self.mask.bool()[:num_tokens, :num_tokens]
+        attention_scores = attention_scores.masked_fill(mask, float('-inf'))
         attention_weights = torch.softmax(attention_scores, dim=-1)
         attention_weights = self.dropout(attention_weights)
         context_vectors = attention_weights @ value
