@@ -57,7 +57,7 @@ class TinyLyricsClassifier(nn.Module):
         # embeddings has shape (batch_size, num_tokens, emb_dim)
         # We want pooled to have shape (batch_size, emb_dim)
 
-        pooled = None
+        pooled = torch.mean(embeddings, dim=1)  # Average across the token dimension
 
         logits = self.classifier(pooled)
 
@@ -94,10 +94,10 @@ def calculate_accuracy(data_loader, model, device):
             # 2. Count how many predictions match label_batch.
             # 3. Update correct and total.
 
-            predicted_labels = None
+            predicted_labels = torch.argmax(logits, dim=1)
 
-            correct += None
-            total += None
+            correct += (predicted_labels == label_batch).sum().item()
+            total += label_batch.size(0)
 
     return correct / total
 
@@ -131,7 +131,12 @@ def classify_text(text, model, tokenizer, max_length, device, pad_token_id=0):
     # 6. Run model.
     # 7. Use argmax to get predicted label.
 
-    predicted_label = None
+    encoded = encoded[:max_length]
+    encoded += [pad_token_id] * (max_length - len(encoded))
+    input_tensor = torch.tensor(encoded, device=device).unsqueeze(0)
+    with torch.no_grad():
+        logits = model(input_tensor)
+    predicted_label = torch.argmax(logits, dim=1).item()
 
     return predicted_label
 
