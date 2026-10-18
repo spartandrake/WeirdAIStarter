@@ -31,8 +31,17 @@ def build_reasoning_prompt(user_prompt):
     # 2. Include the phrase "Think step-by-step."
     # 3. Include the original user_prompt.
     # 4. Include a clear "Final Answer:" section.
+    return (
+        f"You are Weird AI.\n\n"
+        f"User request: {user_prompt}\n\n"
+        "Think step-by-step before writing the final answer:\n"
+        "Step 1. Understand the user's request.\n"
+        "Step 2. Identify important constraints.\n"
+        "Step 3. Plan the response.\n"
+        "Step 4. Produce the final answer.\n\n"
+        "Final Answer:\n"
+    )
 
-    raise NotImplementedError("Implement build_reasoning_prompt.")
 
 
 def build_parody_reasoning_prompt(topic):
@@ -60,8 +69,15 @@ def build_parody_reasoning_prompt(topic):
     #    - Write the final parody lyrics.
     # 4. A clear "Final Parody:" section.
 
-    raise NotImplementedError("Implement build_parody_reasoning_prompt.")
-
+    return (
+        f"Topic: {topic}\n\n"
+        "Think step-by-step before writing the final parody:\n"
+        "Step 1. Identify the topic of the parody.\n"
+        "Step 2. Consider funny contrasts or exaggerations.\n"
+        "Step 3. Generate possible rhymes.\n"
+        "Step 4. Write the final parody lyric or chorus.\n\n"
+        "Final Parody:\n"
+    )
 
 def build_closed_world_prompt(premises, question):
     """
@@ -83,8 +99,14 @@ def build_closed_world_prompt(premises, question):
     # 2. Include each premise in a readable list.
     # 3. Include the question.
     # 4. Include a "Reasoning:" section and an "Answer:" section.
-
-    raise NotImplementedError("Implement build_closed_world_prompt.")
+    return (
+        "You are Weird AI. Use only the provided premises to answer the question.\n\n"
+        "Premises:\n"
+        + "\n".join(f"- {premise}" for premise in premises)
+        + f"\n\nQuestion: {question}\n\n"
+        "Reasoning:\n"
+        "Answer:\n"
+    )
 
 
 def build_open_world_prompt(premises, question):
@@ -110,6 +132,12 @@ def build_open_world_prompt(premises, question):
     # 4. Include the question.
     # 5. Include a "Reasoning:" section and an "Answer:" section.
 
-    raise NotImplementedError("Implement build_open_world_prompt.")
-
-
+    return (
+        "You are Weird AI. You may use relevant background knowledge to answer the question.\n\n"
+        "Check whether the provided premises conflict with known facts.\n\n"
+        "Premises:\n"
+        + "\n".join(f"- {premise}" for premise in premises)
+        + f"\n\nQuestion: {question}\n\n"
+        "Reasoning:\n"
+        "Answer:\n"
+    )
