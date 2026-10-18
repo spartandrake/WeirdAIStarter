@@ -141,3 +141,4 @@ def build_open_world_prompt(premises, question):
         "Reasoning:\n"
         "Answer:\n"
     )
+
