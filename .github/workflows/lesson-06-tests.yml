@@ -34,6 +34,6 @@ jobs:
           pip install -r requirements.test.txt
           pip install -e .
 
-      - name: Run Lesson 04 tests
+      - name: Run Lesson 06 tests
         run: |
-          pytest official-tests/tests/lesson04 -v
+          pytest official-tests/tests/lesson06 -v
