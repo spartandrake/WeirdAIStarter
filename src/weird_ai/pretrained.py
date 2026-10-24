@@ -29,6 +29,7 @@ except ImportError:  # pragma: no cover - handled by student setup or tests
     AutoModelForCausalLM = None
     AutoTokenizer = None
 
+from weird_ai import tokenizer
 from weird_ai.reasoning import build_reasoning_prompt
 
 
@@ -53,8 +54,16 @@ def get_device(preferred_device: str | None = None) -> torch.device:
     # 2. If CUDA is available, return a CUDA device.
     # 3. If Apple Silicon MPS is available, return an MPS device.
     # 4. Otherwise, return a CPU device.
+    if preferred_device is not None:
+        return torch.device(preferred_device)
 
-    raise NotImplementedError("Implement get_device.")
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+
+    return torch.device("cpu")
 
 
 def load_tokenizer(model_name: str = DEFAULT_MODEL_NAME) -> Any:
@@ -76,7 +85,14 @@ def load_tokenizer(model_name: str = DEFAULT_MODEL_NAME) -> Any:
     #    tokenizer has no pad_token, set tokenizer.pad_token to tokenizer.eos_token.
     # 4. Return the tokenizer.
 
-    raise NotImplementedError("Implement load_tokenizer.")
+    if AutoTokenizer is None:
+        raise ImportError("transformers must be installed to use the pretrained model.")
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    return tokenizer
 
 
 def load_model(
@@ -103,7 +119,15 @@ def load_model(
     # 5. Put the model in evaluation mode with model.eval().
     # 6. Return the model.
 
-    raise NotImplementedError("Implement load_model.")
+    if AutoModelForCausalLM is None:
+        raise ImportError("transformers must be installed to use the pretrained model.")
+
+    device = get_device(device)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
+    model.to(device)
+    model.eval()
+
+    return model
 
 
 def tokenize_prompt(
@@ -128,7 +152,11 @@ def tokenize_prompt(
     # 2. Move every tensor in the returned dictionary to the selected device.
     # 3. Return the dictionary.
 
-    raise NotImplementedError("Implement tokenize_prompt.")
+    inputs = tokenizer(prompt, return_tensors="pt")
+    for key, tensor in inputs.items():
+        inputs[key] = tensor.to(device)
+
+    return inputs
 
 
 def decode_generated_tokens(
@@ -153,7 +181,10 @@ def decode_generated_tokens(
     # 2. Use tokenizer.decode(..., skip_special_tokens=skip_special_tokens).
     # 3. Return the decoded text.
 
-    raise NotImplementedError("Implement decode_generated_tokens.")
+    if len(generated_token_ids.shape) > 1:
+        generated_token_ids = generated_token_ids[0]
+
+    return tokenizer.decode(generated_token_ids, skip_special_tokens=skip_special_tokens)
 
 
 def generate_text(
@@ -195,7 +226,27 @@ def generate_text(
     # 7. Decode the generated token IDs with decode_generated_tokens().
     # 8. Return the decoded generated text.
 
-    raise NotImplementedError("Implement generate_text.")
+    device = get_device(device)
+    if tokenizer is None:
+        tokenizer = load_tokenizer(model_name)
+    if model is None:
+        model = load_model(model_name, device=device)
+    
+    inputs = tokenize_prompt(tokenizer, prompt, device)
+    with torch.no_grad():
+        pad_token_id = getattr(tokenizer, "pad_token_id", None)
+        if pad_token_id is None:
+            pad_token_id = tokenizer.eos_token_id
+        generated_tokens = model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            top_k=top_k,
+            do_sample=do_sample,
+            pad_token_id=pad_token_id
+        )
+    generated_text = decode_generated_tokens(tokenizer=tokenizer, generated_token_ids=generated_tokens, skip_special_tokens=True)
+    return generated_text
 
 
 def generate_with_reasoning(
@@ -230,4 +281,14 @@ def generate_with_reasoning(
     # 2. Pass that reasoning prompt to generate_text().
     # 3. Return the generated text.
 
-    raise NotImplementedError("Implement generate_with_reasoning.")
+    reasoning_prompt = build_reasoning_prompt(user_prompt)
+    return generate_text(
+        prompt=reasoning_prompt,
+        model=model,
+        tokenizer=tokenizer,
+        model_name=model_name,
+        max_new_tokens=max_new_tokens,
+        temperature=temperature,
+        top_k=top_k,
+        device=device
+    )
