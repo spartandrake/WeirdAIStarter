@@ -45,7 +45,13 @@ def extract_final_parody(text: str) -> str:
     # 3. If the marker exists, return everything after it, stripped.
     # 4. If the marker does not exist, return the original text, stripped.
 
-    raise NotImplementedError("Implement extract_final_parody.")
+    return_text = text.strip()
+    if not return_text:          
+        return ""
+    start = return_text.rfind(FINAL_PARODY_MARKER)   
+    if start == -1:              
+        return return_text
+    return return_text[start + len(FINAL_PARODY_MARKER):].strip()   
 
 
 def normalize_lyrics(text: str) -> list[str]:
@@ -64,8 +70,12 @@ def normalize_lyrics(text: str) -> list[str]:
     # 2. Strip whitespace from each line.
     # 3. Remove blank lines.
     # 4. Return the cleaned list of lines.
-
-    raise NotImplementedError("Implement normalize_lyrics.")
+    lines =[]
+    for line in text.splitlines():
+        line = line.strip()
+        if line:
+            lines.append(line)
+    return lines
 
 
 def calculate_rhyme_score(text: str) -> float:
@@ -85,8 +95,9 @@ def calculate_rhyme_score(text: str) -> float:
     # 1. Extract the final parody from the text.
     # 2. Analyze the lyrics using analyze_lyrics().
     # 3. Return the "pairwise_rhyme_score" value as a float.
-
-    raise NotImplementedError("Implement calculate_rhyme_score.")
+    final_parody = extract_final_parody(text)
+    analysis = analyze_lyrics(final_parody)
+    return float(analysis["pairwise_rhyme_score"])
 
 
 def calculate_structure_score(text: str, target_line_count: int = 4) -> float:
@@ -114,8 +125,15 @@ def calculate_structure_score(text: str, target_line_count: int = 4) -> float:
     #       1.0 - min(1.0, abs(actual_line_count - target_line_count) / target_line_count)
     # 6. Return the average of the line count score and syllable consistency score.
     # 7. Clamp the final result between 0.0 and 1.0.
+    final = extract_final_parody(text)
+    final_norm = normalize_lyrics(final)
+    if not final_norm:
+        return 0.0
+    analysis = analyze_lyrics("\n".join(final_norm))
+    line_count_score = 1.0 - min(1.0, abs(len(final_norm) - target_line_count) / target_line_count)
+    average_score = (line_count_score + analysis["syllable_consistency_score"]) / 2
 
-    raise NotImplementedError("Implement calculate_structure_score.")
+    return max(0.0, min(1.0, average_score))
 
 
 def evaluate_parody(text: str, target_line_count: int = 4) -> dict[str, Any]:
@@ -150,4 +168,21 @@ def evaluate_parody(text: str, target_line_count: int = 4) -> dict[str, Any]:
     #       "overall_score"
     #       "passed"
 
-    raise NotImplementedError("Implement evaluate_parody.")
+    final_parody = extract_final_parody(text)
+    final_norm = normalize_lyrics(final_parody)
+    analysis = analyze_lyrics("\n".join(final_norm))
+    rhyme_score = calculate_rhyme_score(text)
+    structure_score = calculate_structure_score(text, target_line_count)
+    overall_score = (rhyme_score + structure_score) / 2
+    passed = overall_score >=0.6 and len(final_norm) > 0
+    return{
+        "extracted_text": final_parody,
+        "lines": final_norm,
+        "line_count": len(final_norm),
+        "rhyme_scheme": analysis["rhyme_scheme"],
+        "syllable_counts": analysis["syllable_counts"],
+        "rhyme_score": rhyme_score,
+        "structure_score": structure_score,
+        "overall_score": overall_score,
+        "passed": passed
+    }
